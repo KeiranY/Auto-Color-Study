@@ -19,10 +19,10 @@ fn add_preload_hook(full_path: PathBuf) {
         preload_file.read_to_string(&mut preload_contents).unwrap();
     }
 
-    if !preload_contents.contains(full_path.to_string_lossy().as_ref()) {
+    if !preload_contents.trim_end().contains(full_path.to_string_lossy().as_ref()) {
         let mut preload_file = File::create("/etc/ld.so.preload").unwrap();
-        if !preload_contents.is_empty() {
-            writeln!(preload_file, "{};{}", full_path.display(), preload_contents.trim()).unwrap();
+        if !preload_contents.trim_end().is_empty() {
+            writeln!(preload_file, "{};{}", full_path.display(), preload_contents.trim_end()).unwrap();
         } else {
             writeln!(preload_file, "{}", full_path.display()).unwrap();
         }
