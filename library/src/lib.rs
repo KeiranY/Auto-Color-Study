@@ -33,17 +33,11 @@ where
     })
 }
 
-pub fn resolve_fd_path(dirfd: c_int, cpath: *const c_char) -> Option<PathBuf> {
-    let path = unsafe { CStr::from_ptr(cpath) };
-
-    if path.to_bytes().starts_with(b"/") {
-        return Some(PathBuf::from(path.to_string_lossy().to_string()));
-    }
-
+pub fn resolve_fd(dirfd: c_int) -> Option<String> {
     if dirfd == libc::AT_FDCWD {
         return std::env::current_dir()
             .ok()
-            .map(|cwd| cwd.join(path.to_string_lossy().as_ref()));
+            .map(|cwd| cwd.to_string_lossy().to_string());
     }
 
     let fd_path = PathBuf::from(format!("/proc/self/fd/{}", dirfd));
@@ -57,13 +51,31 @@ pub fn resolve_fd_path(dirfd: c_int, cpath: *const c_char) -> Option<PathBuf> {
     };
 
     if len == -1 {
-        log::error!("[resolve_fd_path] Failed to resolve dirfd");
+        log::error!("[resolve_fd] Failed to resolve dirfd");
         return None;
     }
 
-    let dir_path_str = unsafe { CStr::from_ptr(buf.as_ptr()).to_string_lossy().to_string() };
-    let dir_path = Path::new(&dir_path_str);
-    Some(dir_path.join(path.to_string_lossy().as_ref()))
+    Some(unsafe { CStr::from_ptr(buf.as_ptr()).to_string_lossy().to_string() })
+}
+
+pub fn resolve_fd_path(dirfd: c_int, cpath: *const c_char) -> Option<PathBuf> {
+    if cpath.is_null() {
+        return resolve_fd(dirfd).map(PathBuf::from);
+    }
+
+    let path = unsafe { CStr::from_ptr(cpath) };
+
+    if path.to_bytes().starts_with(b"/") {
+        return Some(PathBuf::from(path.to_string_lossy().to_string()));
+    }
+
+    let resolved_path = resolve_fd(dirfd)?;
+    let resolved_path = Path::new(&resolved_path);
+    let binding = path.to_string_lossy();
+    let path = Path::new(binding.as_ref());
+    let new_path = resolved_path.join(path);
+
+    Some(new_path)
 }
 
 #[ctor::ctor]
