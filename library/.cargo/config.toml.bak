@@ -1,5 +1,0 @@
-[build]
-target = "x86_64-unknown-linux-gnu"
-
-[target.x86_64-unknown-linux-gnu]
-rustflags = ["-Zlocation-detail=none", "-Zfmt-debug=none"]
