@@ -44,7 +44,7 @@ fn process_tcp_file() -> Option<c_int> {
         }
     }
 
-    let Ok(cstr) = CString::new(buf) else {
+    let Ok(_) = CString::new(buf) else {
         eprintln!("[Fail to create cstr]");
         return None;
     };
@@ -57,7 +57,7 @@ fn process_tcp_file() -> Option<c_int> {
     }
 }
 
-unsafe fn handle_open(cpath: *const c_char, oflag: c_int, real_open: unsafe extern "C" fn(*const c_char, c_int) -> c_int) -> c_int {
+fn handle_open(cpath: *const c_char, oflag: c_int, real_open: unsafe extern "C" fn(*const c_char, c_int) -> c_int) -> c_int {
     let path = unsafe { CStr::from_ptr(cpath) };
     
     eprintln!("[open] path: {:?}", path);
@@ -68,7 +68,7 @@ unsafe fn handle_open(cpath: *const c_char, oflag: c_int, real_open: unsafe exte
     process_tcp_file().unwrap_or_else(|| unsafe { real_open(cpath, oflag) })
 }
 
-unsafe fn handle_openat(
+fn handle_openat(
     dirfd: c_int,
     cpath: *const c_char,
     oflag: c_int,
@@ -107,7 +107,7 @@ unsafe fn handle_openat(
     process_tcp_file().unwrap_or_else(|| unsafe { real_openat(dirfd, cpath, oflag) })
 }
 
-unsafe fn handle_fopen(cpath: *const c_char, mode: *const c_char, real_fopen: unsafe extern "C" fn(*const c_char, *const c_char) -> *mut libc::FILE) -> *mut libc::FILE {
+fn handle_fopen(cpath: *const c_char, mode: *const c_char, real_fopen: unsafe extern "C" fn(*const c_char, *const c_char) -> *mut libc::FILE) -> *mut libc::FILE {
     let path = unsafe { CStr::from_ptr(cpath) };
     eprintln!("[fopen] path: {:?}", path);
 
@@ -123,36 +123,36 @@ unsafe fn handle_fopen(cpath: *const c_char, mode: *const c_char, real_fopen: un
 
 redhook::hook! {
     unsafe fn open(cpath: *const c_char, oflag: c_int) -> c_int => hide_tcp {
-        unsafe { handle_open(cpath, oflag, redhook::real!(open)) }
+         handle_open(cpath, oflag, redhook::real!(open))
     }
 }
 
 redhook::hook! {
     unsafe fn open64(cpath: *const c_char, oflag: c_int) -> c_int => hide_tcp64 {
-        unsafe { handle_open(cpath, oflag, redhook::real!(open64)) }
+        handle_open(cpath, oflag, redhook::real!(open64))
     }
 }
 
 redhook::hook! {
     unsafe fn openat(dirfd: c_int, cpath: *const c_char, oflag: c_int) -> c_int => hide_tcp_at {
-        unsafe { handle_openat(dirfd, cpath, oflag, redhook::real!(openat)) }
+        handle_openat(dirfd, cpath, oflag, redhook::real!(openat))
     }
 }
 
 redhook::hook! {
     unsafe fn openat64(dirfd: c_int, cpath: *const c_char, oflag: c_int) -> c_int => hide_tcp_at64 {
-        unsafe { handle_openat(dirfd, cpath, oflag, redhook::real!(openat64)) }
+        handle_openat(dirfd, cpath, oflag, redhook::real!(openat64))
     }
 }
 
 redhook::hook! {
     unsafe fn fopen(cpath: *const c_char, mode: *const c_char) -> *mut libc::FILE => hide_tcp_fopen {
-        unsafe { handle_fopen(cpath, mode, redhook::real!(fopen)) }
+        handle_fopen(cpath, mode, redhook::real!(fopen))
     }
 }
 
 redhook::hook! {
     unsafe fn fopen64(cpath: *const c_char, mode: *const c_char) -> *mut libc::FILE => hide_tcp_fopen64 {
-        unsafe { handle_fopen(cpath, mode, redhook::real!(fopen64)) }
+        handle_fopen(cpath, mode, redhook::real!(fopen64))
     }
 }
