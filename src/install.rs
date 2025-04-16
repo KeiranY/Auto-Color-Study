@@ -99,7 +99,7 @@ fn find_library_path() -> PathBuf {
 
 fn delete_self() {
     let current_exe = env::current_exe().unwrap();
-    info!("🗑️ Deleting current executable: {}", current_exe.display());
+    info!("🗑️  Deleting current executable: {}", current_exe.display());
     if fs::remove_file(current_exe).is_err() {
         error!("⚠️ Failed to delete current executable.");
     } else {
