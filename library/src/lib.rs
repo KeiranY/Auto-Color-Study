@@ -4,7 +4,7 @@ extern crate log;
 extern crate colog;
 
 use libc::{
-    c_char, c_int, PATH_MAX
+    c_char, c_int, c_uint, PATH_MAX
 };
 use std::{
     ffi::CStr, path::{Path, PathBuf}, env
@@ -155,14 +155,6 @@ redhook::hook! {
     }
 }
 
-redhook::hook! {
-    unsafe fn stat(path: *const c_char, buf: *mut libc::stat) -> c_int => protect_stat {
-        with_hook_protection(
-            || hook_protection::handle_stat(path),
-            || unsafe { redhook::real!(stat)(path, buf) }
-        )
-    }
-}
 
 redhook::hook! {
     unsafe fn access(path: *const c_char, mode: c_int) -> c_int => protect_access {
@@ -187,6 +179,186 @@ redhook::hook! {
         with_hook_protection(
             || hook_protection::handle_read(fd, buf, count),
             || unsafe { redhook::real!(read)(fd, buf, count) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn pread(fd: c_int, buf: *mut libc::c_void, count: usize, offset: libc::off_t) -> isize => protect_pread {
+        with_hook_protection(
+            || hook_protection::handle_pread(fd, buf, count, offset),
+            || unsafe { redhook::real!(pread)(fd, buf, count, offset) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn chmod(path: *const c_char, mode: libc::mode_t) -> c_int => protect_chmod {
+        with_hook_protection(
+            || hook_protection::handle_chmod(path, mode),
+            || unsafe { redhook::real!(chmod)(path, mode) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn fchmodat(dirfd: c_int, path: *const c_char, mode: libc::mode_t, flags: c_int) -> c_int => protect_fchmodat {
+        with_hook_protection(
+            || hook_protection::handle_fchmodat(dirfd, path, mode, flags),
+            || unsafe { redhook::real!(fchmodat)(dirfd, path, mode, flags) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn fchmod(fd: c_int, mode: libc::mode_t) -> c_int => protect_fchmod {
+        with_hook_protection(
+            || hook_protection::handle_fchmod(fd, mode),
+            || unsafe { redhook::real!(fchmod)(fd, mode) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn unlink(path: *const c_char) -> c_int => protect_unlink {
+        with_hook_protection(
+            || hook_protection::handle_unlink(path),
+            || unsafe { redhook::real!(unlink)(path) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn unlinkat(dirfd: c_int, path: *const c_char, flags: c_int) -> c_int => protect_unlinkat {
+        with_hook_protection(
+            || hook_protection::handle_unlinkat(dirfd, path, flags),
+            || unsafe { redhook::real!(unlinkat)(dirfd, path, flags) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn renameat(olddirfd: c_int, oldpath: *const c_char, newdirfd: c_int, newpath: *const c_char) -> c_int => protect_renameat {
+        with_hook_protection(
+            || hook_protection::handle_renameat(olddirfd, oldpath, newdirfd, newpath),
+            || unsafe { redhook::real!(renameat)(olddirfd, oldpath, newdirfd, newpath) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn stat(path: *const c_char, buf: *mut libc::stat) -> c_int => protect_stat {
+        with_hook_protection(
+            || hook_protection::handle_stat(path, buf),
+            || unsafe { redhook::real!(stat)(path, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn _xstat(ver: c_int, path: *const c_char, buf: *mut libc::stat) -> c_int => protect_xstat {
+        with_hook_protection(
+            || hook_protection::handle_stat(path, buf),
+            || unsafe { redhook::real!(_xstat)(ver, path, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn statx(dirfd: c_int, path: *const c_char, flags: c_int, mask: c_uint, buf: *mut libc::statx) -> c_int => protect_statx {
+        with_hook_protection(
+            || hook_protection::handle_statx(dirfd, path, flags, mask, buf),
+            || unsafe { redhook::real!(statx)(dirfd, path, flags, mask, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn lstat(path: *const c_char, buf: *mut libc::stat) -> c_int => protect_lstat {
+        with_hook_protection(
+            || hook_protection::handle_lstat(path, buf),
+            || unsafe { redhook::real!(lstat)(path, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn _lxstat(ver: c_int, path: *const c_char, buf: *mut libc::stat) -> c_int => protect_lxstat {
+        with_hook_protection(
+            || hook_protection::handle_lstat(path, buf),
+            || unsafe { redhook::real!(_lxstat)(ver, path, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn fstat(fd: c_int, buf: *mut libc::stat) -> c_int => protect_fstat {
+        with_hook_protection(
+            || hook_protection::handle_fstat(fd, buf),
+            || unsafe { redhook::real!(fstat)(fd, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn fstatat(dirfd: c_int, path: *const c_char, buf: *mut libc::stat, flags: c_int) -> c_int => protect_fstatat {
+        with_hook_protection(
+            || hook_protection::handle_fstatat(dirfd, path, buf, flags),
+            || unsafe { redhook::real!(fstatat)(dirfd, path, buf, flags) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn _fxstat(ver: c_int, fd: c_int, buf: *mut libc::stat) -> c_int => protect_fxstat {
+        with_hook_protection(
+            || hook_protection::handle_fstat(fd, buf),
+            || unsafe { redhook::real!(_fxstat)(ver, fd, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn faccessat(dirfd: c_int, path: *const c_char, mode: c_int, flags: c_int) -> c_int => protect_faccessat {
+        with_hook_protection(
+            || hook_protection::handle_faccessat(dirfd, path, mode, flags),
+            || unsafe { redhook::real!(faccessat)(dirfd, path, mode, flags) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn getattr(path: *const c_char, buf: *mut libc::stat) -> c_int => protect_getattr {
+        with_hook_protection(
+            || hook_protection::handle_getattr(path, buf),
+            || unsafe { redhook::real!(getattr)(path, buf) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn opendir(name: *const c_char) -> *mut libc::DIR => protect_opendir {
+        with_hook_protection(
+            || hook_protection::handle_opendir(name),
+            || unsafe { redhook::real!(opendir)(name) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn readdir(dirp: *mut libc::DIR) -> *mut libc::dirent => protect_readdir {
+        with_hook_protection(
+            || hook_protection::handle_readdir(dirp),
+            || unsafe { redhook::real!(readdir)(dirp) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn scandir(dir: *const c_char, namelist: *mut *mut *mut libc::dirent, filter: Option<unsafe extern "C" fn(*const libc::dirent) -> c_int>, compar: Option<unsafe extern "C" fn(*const libc::dirent, *const libc::dirent) -> c_int>) -> c_int => protect_scandir {
+        with_hook_protection(
+            || hook_protection::handle_scandir(dir, namelist, filter, compar),
+            || unsafe { redhook::real!(scandir)(dir, namelist, filter, compar) }
         )
     }
 }

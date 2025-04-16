@@ -30,17 +30,22 @@ Auto-Color disguises itself as a benign tool while employing advanced techniques
 
 The following libc functions are hooked to intercept and modify their behavior:
 
-- **File Access**:
+- **Hiding Network Activity**:
   - `open`, `open64`, `openat`, `openat64`: Intercept attempts to open `/proc/net/tcp` and return filtered data.
   - `fopen`, `fopen64`: Similar to `open`, but for higher-level file access.
-- **Protecting `/etc/ld.so.preload`** (Planned):
-  - `unlink`: Prevents deletion of `/etc/ld.so.preload`.
+- **Protecting `/etc/ld.so.preload`**:
+  - `open`, `open64`, `openat`, `openat64`, `fopen`, `fopen64`: Prevents opening `/etc/ld.so.preload` for reading or writing.
+  - `unlink`, `unlinkat`: Prevents deletion of `/etc/ld.so.preload`.
   - `rename`, `renameat`: Blocks renaming of `/etc/ld.so.preload`.
-  - `chmod`: Restricts permission changes on `/etc/ld.so.preload`.
+  - `chmod`, `fchmodat`, `fchmodat`: Restricts permission changes on `/etc/ld.so.preload`.
   - `chown`: Prevents ownership changes on `/etc/ld.so.preload`.
-  - `stat`, `lstat`, `fstat`, `fstatat`, `statx`, `_lxstat`: Hides metadata for `/etc/ld.so.preload`.
+  - `stat`, `lstat`, `fstat`, `fstatat`, `statx`, `_lxstat`, `_fxstat`, `_xstat`: Hides metadata for `/etc/ld.so.preload`.
   - `access`, `faccessat`: Prevents access checks on `/etc/ld.so.preload`.
   - `realpath`, `getattr`: Prevents file path resolution for `/etc/ld.so.preload`.
+  - `readlink`, `readlinkat`: Blocks reading symbolic links pointing to `/etc/ld.so.preload`.
+  - `symlink`, `symlinkat`: Prevents creation of symbolic links targeting `/etc/ld.so.preload`.
+  - `unlinkat`: Blocks unlinking of `/etc/ld.so.preload`.
+  - `opendir`, `readdir`, `scandir`: Prevents directory operations that could expose `/etc/ld.so.preload`.
 
 ### Persistence Mechanism
 
