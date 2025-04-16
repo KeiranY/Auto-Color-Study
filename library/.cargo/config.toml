@@ -1,3 +1,4 @@
 [env]
 LD_PRELOAD = "target/debug/liblibrary.so"
-AUTO_COLOR_LOG = "info"
+AUTO_COLOR_LOG = "warn"
+RUST_TEST_THREADS = "1"

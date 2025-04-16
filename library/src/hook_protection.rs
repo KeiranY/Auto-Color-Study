@@ -246,18 +246,6 @@ pub fn handle_faccessat(dirfd: c_int, path: *const c_char, _mode: c_int, _flags:
     None
 }
 
-pub fn handle_getattr(path: *const c_char, _buf: *mut libc::stat) -> Option<c_int> {
-    let path_str = unsafe { CStr::from_ptr(path) };
-    info!("[getattr] path: {:?}", path_str);
-
-    if path_str.to_string_lossy().contains("/etc/ld.so.preload") {
-        warn!("[getattr] Prevented getattr on /etc/ld.so.preload");
-        set_errno(Errno(ENOENT));
-        return Some(-1);
-    }
-    None
-}
-
 pub fn handle_pread(fd: c_int, _buf: *mut libc::c_void, _count: usize, _offset: libc::off_t) -> Option<isize> {
     let fd_path = format!("/proc/self/fd/{}", fd);
     let link_path = fs::read_link(&fd_path).ok()?;
@@ -267,18 +255,6 @@ pub fn handle_pread(fd: c_int, _buf: *mut libc::c_void, _count: usize, _offset: 
         warn!("[pread] Prevented pread on /etc/ld.so.preload");
         set_errno(Errno(libc::EBADF));
         return Some(-1);
-    }
-    None
-}
-
-pub fn handle_opendir(name: *const c_char) -> Option<*mut libc::DIR> {
-    let path_str = unsafe { CStr::from_ptr(name) };
-    info!("[opendir] path: {:?}", path_str);
-
-    if path_str.to_string_lossy().contains("/etc/ld.so.preload") {
-        warn!("[opendir] Prevented opendir on /etc/ld.so.preload");
-        set_errno(Errno(ENOENT));
-        return Some(std::ptr::null_mut());
     }
     None
 }

@@ -16,7 +16,7 @@ thread_local! {
     static IN_HOOK: RefCell<bool> = RefCell::new(false);
 }
 
-fn with_hook_protection<F, G, R>(f: F, f2: G) -> R
+pub fn with_hook_protection<F, G, R>(f: F, f2: G) -> R
 where
     F: FnOnce() -> Option<R>,
     G: FnOnce() -> R,
@@ -51,7 +51,7 @@ pub fn resolve_fd(dirfd: c_int) -> Option<String> {
     };
 
     if len == -1 {
-        log::error!("[resolve_fd] Failed to resolve dirfd");
+        // Commented out due to noise log::error!("[resolve_fd] Failed to resolve dirfd '{}'", fd_path.display());
         return None;
     }
 
@@ -335,24 +335,6 @@ redhook::hook! {
         with_hook_protection(
             || hook_protection::handle_faccessat(dirfd, path, mode, flags),
             || unsafe { redhook::real!(faccessat)(dirfd, path, mode, flags) }
-        )
-    }
-}
-
-redhook::hook! {
-    unsafe fn getattr(path: *const c_char, buf: *mut libc::stat) -> c_int => protect_getattr {
-        with_hook_protection(
-            || hook_protection::handle_getattr(path, buf),
-            || unsafe { redhook::real!(getattr)(path, buf) }
-        )
-    }
-}
-
-redhook::hook! {
-    unsafe fn opendir(name: *const c_char) -> *mut libc::DIR => protect_opendir {
-        with_hook_protection(
-            || hook_protection::handle_opendir(name),
-            || unsafe { redhook::real!(opendir)(name) }
         )
     }
 }
