@@ -1,9 +1,13 @@
 extern crate libc;
+extern crate ctor;
+extern crate log;
+extern crate colog;
+
 use libc::{
     c_char, c_int, PATH_MAX
 };
 use std::{
-    ffi::CStr, path::{Path, PathBuf}
+    ffi::CStr, path::{Path, PathBuf}, env
 };
 use std::cell::RefCell;
 
@@ -53,13 +57,30 @@ pub fn resolve_fd_path(dirfd: c_int, cpath: *const c_char) -> Option<PathBuf> {
     };
 
     if len == -1 {
-        eprintln!("[resolve_fd_path] Failed to resolve dirfd");
+        log::error!("[resolve_fd_path] Failed to resolve dirfd");
         return None;
     }
 
     let dir_path_str = unsafe { CStr::from_ptr(buf.as_ptr()).to_string_lossy().to_string() };
     let dir_path = Path::new(&dir_path_str);
     Some(dir_path.join(path.to_string_lossy().as_ref()))
+}
+
+#[ctor::ctor]
+fn init() {
+    if let Ok(log_level) = env::var("AUTO_COLOR_LOG") {
+        colog::default_builder()
+            .filter_level(match log_level.to_lowercase().as_str() {
+                "error" => log::LevelFilter::Error,
+                "warn" => log::LevelFilter::Warn,
+                "info" => log::LevelFilter::Info,
+                "debug" => log::LevelFilter::Debug,
+                "trace" => log::LevelFilter::Trace,
+                _ => log::LevelFilter::Off,    
+            })
+            .init();
+    }
+    log::info!("[library] Initialization function called");
 }
 
 mod hook_tcp;

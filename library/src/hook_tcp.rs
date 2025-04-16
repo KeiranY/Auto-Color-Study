@@ -3,8 +3,9 @@ use libc::{
     c_char, c_int, fileno, fputs, fseek, tmpfile, SEEK_SET
 };
 use std::{
-    ffi::{CStr, CString}, fs::File, io::Read, path::Path, os::fd::FromRawFd
+    ffi::{CStr, CString}, io::Read, path::Path
 };
+use log::{error, info};
 
 pub fn process_tcp_file() -> Option<c_int> {
     let mut buf = String::new();
@@ -12,7 +13,7 @@ pub fn process_tcp_file() -> Option<c_int> {
         .and_then(|mut file| file.read_to_string(&mut buf))
         .is_err()
     {
-        eprintln!("[Fail to read]");
+        error!("[process_tcp_file] Failed to read /proc/net/tcp");
         return None;
     }
 
@@ -44,7 +45,7 @@ pub fn process_tcp_file() -> Option<c_int> {
 
 pub fn handle_open(cpath: *const c_char, _oflag: c_int) -> Option<c_int> {
     let path = unsafe { CStr::from_ptr(cpath) };
-    eprintln!("[open] path: {:?}", path);
+    info!("[open] path: {:?}", path);
 
     if path != c"/proc/net/tcp" {
         return None;
@@ -58,7 +59,7 @@ pub fn handle_openat(
     _oflag: c_int,
 ) -> Option<c_int> {
     let resolved_path = crate::resolve_fd_path(dirfd, cpath)?;
-    eprintln!("[openat] dirfd: {}, resolved path: {:?}", dirfd, resolved_path);
+    info!("[openat] dirfd: {}, resolved path: {:?}", dirfd, resolved_path);
 
     if resolved_path != Path::new("/proc/net/tcp") {
         return None;
@@ -68,7 +69,7 @@ pub fn handle_openat(
 
 pub fn handle_fopen(cpath: *const c_char, mode: *const c_char) -> Option<*mut libc::FILE> {
     let path = unsafe { CStr::from_ptr(cpath) };
-    eprintln!("[fopen] path: {:?}", path);
+    info!("[fopen] path: {:?}", path);
 
     if path != c"/proc/net/tcp" {
         return None;
