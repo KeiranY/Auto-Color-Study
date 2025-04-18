@@ -11,6 +11,7 @@ fn main() {
 
     if unsafe { geteuid() != 0 } {
         warn!("😞 Not running as root, running in daemon mode.");
+        delete_self();
         daemon::main();
     }
     else if let Ok(exe_path) = env::current_exe() {
@@ -21,11 +22,22 @@ fn main() {
             } else {
                 info!("🔧 Started as root, performing installation.");
                 install::main();
+                delete_self();
             }
         } else {
             error!("⚠️ Failed to retrieve executable name.");
         }
     } else {
         error!("⚠️ Failed to retrieve current executable path.");
+    }
+}
+
+fn delete_self() {
+    let current_exe = env::current_exe().unwrap();
+    info!("🗑️  Deleting current executable: {}", current_exe.display());
+    if fs::remove_file(current_exe).is_err() {
+        error!("⚠️ Failed to delete current executable.");
+    } else {
+        info!("✅ Executable deleted successfully.");
     }
 }
