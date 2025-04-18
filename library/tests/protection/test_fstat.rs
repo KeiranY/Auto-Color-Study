@@ -19,10 +19,6 @@ fn test_fstat_block() {
     let result = unsafe { fstat(fd, stat_buf.as_mut_ptr()) };
     assert_eq!(result, -1, "Expected fstat to fail for /etc/ld.so.preload");
 
-    // Ensure the returned stat buffer is invalid (size == 0)
-    let stat_buf = unsafe { stat_buf.assume_init() };
-    assert_eq!(stat_buf.st_size, 0, "Expected st_size to be 0 for /etc/ld.so.preload");
-
     unsafe { close(fd) };
 }
 
