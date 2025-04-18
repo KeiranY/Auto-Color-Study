@@ -1,4 +1,5 @@
 [env]
 LD_PRELOAD = "target/debug/liblibrary.so"
+AUTO_COLOR_TARGET = "deps\\/tests-[a-f0-9]{16}$"
 AUTO_COLOR_LOG = "warn"
 RUST_TEST_THREADS = "1"

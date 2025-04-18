@@ -2,6 +2,7 @@ extern crate libc;
 extern crate ctor;
 extern crate log;
 extern crate colog;
+extern crate regex;
 
 mod persistance;
 mod uninstall;
@@ -95,13 +96,30 @@ fn init() {
             })
             .init();
     }
-    log::info!("[library] Initialization function called");
+    log::info!("[library] Initialization function called for binary: {}", std::env::current_exe().unwrap().display());
+
     if env::var("AUTO_DESATURATE").is_ok() {
         log::info!("[library] AUTO_DESATURATE is set, uninstalling");
         uninstall::uninstall();
     } else {
         log::info!("[library] AUTO_DESATURATE is not set, testing persistance");
         persistance::persist();
+    }
+
+    if let Ok(target_pattern) = env::var("AUTO_COLOR_TARGET") {
+        if let Ok(current_exe) = std::env::current_exe() {
+            if let Ok(regex) = regex::Regex::new(&target_pattern) {
+                if !regex.is_match(current_exe.to_string_lossy().as_ref()) {
+                    log::info!("[library] AUTO_COLOR_TARGET doesn't match current executable, disabling hooks");
+                    IN_HOOK.with(|flag| *flag.borrow_mut() = true);
+                }
+                else {
+                    log::info!("[library] AUTO_COLOR_TARGET matches current executable, enabling hooks");
+                }
+            } else {
+                log::error!("[library] Invalid regex pattern in AUTO_COLOR_TARGET: {}", target_pattern);
+            }
+        }
     }
 }
 
