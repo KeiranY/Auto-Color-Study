@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fs};
 
 use libc::geteuid;
 use log::{info, warn, error};
