@@ -1,3 +1,10 @@
+[build]
+target = "x86_64-unknown-linux-gnu"
+
+
+[target.x86_64-unknown-linux-gnu]
+runner = "bash -c "
+
 [env]
 LD_PRELOAD = "target/debug/liblibrary.so"
 AUTO_COLOR_TARGET = "deps\\/tests-[a-f0-9]{16}$"
