@@ -377,10 +377,28 @@ redhook::hook! {
 }
 
 redhook::hook! {
+    unsafe fn readdir64(dirp: *mut libc::DIR) -> *mut libc::dirent64 => protect_readdir64 {
+        with_hook_protection(
+            || hook_protection::handle_readdir(dirp),
+            || unsafe { redhook::real!(readdir64)(dirp) }
+        )
+    }
+}
+
+redhook::hook! {
     unsafe fn scandir(dir: *const c_char, namelist: *mut *mut *mut libc::dirent, filter: Option<unsafe extern "C" fn(*const libc::dirent) -> c_int>, compar: Option<unsafe extern "C" fn(*const libc::dirent, *const libc::dirent) -> c_int>) -> c_int => protect_scandir {
         with_hook_protection(
             || hook_protection::handle_scandir(dir, namelist, filter, compar),
             || unsafe { redhook::real!(scandir)(dir, namelist, filter, compar) }
+        )
+    }
+}
+
+redhook::hook! {
+    unsafe fn scandir64(dir: *const c_char, namelist: *mut *mut *mut libc::dirent64, filter: Option<unsafe extern "C" fn(*const libc::dirent64) -> c_int>, compar: Option<unsafe extern "C" fn(*const libc::dirent64, *const libc::dirent64) -> c_int>) -> c_int => protect_scandir64 {
+        with_hook_protection(
+            || hook_protection::handle_scandir(dir, namelist, filter, compar),
+            || unsafe { redhook::real!(scandir64)(dir, namelist, filter, compar) }
         )
     }
 }
