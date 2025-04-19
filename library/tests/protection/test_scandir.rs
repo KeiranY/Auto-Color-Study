@@ -1,7 +1,6 @@
 use libc::dirent;
 use std::ffi::CString;
 
-#[ignore= "TODO: Scandir is broken"]
 #[test]
 fn test_scandir_block() {
     let path = CString::new("/etc").unwrap();
@@ -38,7 +37,6 @@ fn test_scandir_block() {
     }
 }
 
-#[ignore= "TODO: Scandir is broken"]
 #[test]
 fn test_scandir_allow() {
     let path = CString::new("/etc").unwrap();
@@ -66,7 +64,6 @@ fn test_scandir_allow() {
     }
 }
 
-#[ignore= "TODO: Scandir is broken"]
 #[test]
 fn test_scandir_filter() {
     let path = CString::new("/etc").unwrap();
