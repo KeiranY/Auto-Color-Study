@@ -54,6 +54,12 @@ The following libc functions are hooked to intercept and modify their behavior:
 3. Modifies `/etc/ld.so.preload` to include the malicious library, ensuring it is loaded in every process.
 4. **(Planned)** Migrates to system processes (e.g., `/sbin/auditd`, `/usr/sbin/cron`) for persistence by forking and executing within these processes to avoid suspicion.
 
+## Testing
+
+To test the project without affecting the host operating system, a Docker-based test harness is provided. This allows the code to be executed in an isolated environment, preventing any unintended modifications or damage to the host system.
+
+So long as Docker is installed, `cargo test` should function as usual. If Docker requires sudo, a prompt will appear. This can be validated by checking the [harness shell file](https://github.com/kcy/Auto-Color-Study/blob/main/test-harness/start-container.sh).
+
 ## References
 
 - [ZW01f: Auto-Color Malware Analysis](https://zw01f.github.io/malware%20analysis/auto-color/)
