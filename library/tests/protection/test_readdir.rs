@@ -1,4 +1,4 @@
-use libc::{opendir, readdir, closedir};
+use libc::{closedir, opendir, readdir, readdir64};
 use std::ffi::CString;
 
 #[test]

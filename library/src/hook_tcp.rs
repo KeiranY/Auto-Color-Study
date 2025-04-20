@@ -2,6 +2,7 @@ extern crate libc;
 use libc::{
     c_char, c_int, fileno, fputs, fseek, tmpfile, SEEK_SET
 };
+use errno::errno;
 use std::{
     ffi::{CStr, CString}, io::Read, path::Path
 };
@@ -13,7 +14,8 @@ pub fn process_tcp_file() -> Option<c_int> {
         .and_then(|mut file| file.read_to_string(&mut buf))
         .is_err()
     {
-        error!("[process_tcp_file] Failed to read /proc/net/tcp");
+        let err = errno();
+        error!("[process_tcp_file] Failed to read /proc/net/tcp, errno: {}, message: {}", err.0, err);
         return None;
     }
 

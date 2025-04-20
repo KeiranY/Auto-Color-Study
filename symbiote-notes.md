@@ -1,0 +1,13 @@
+- Hides processes under /proc by exe name
+- Hides files by name globally
+- Hides preload hook
+    - Capture calls using execve to launch ld.so with LD_TRACE_LOADED_OBJECT
+- Credential Harvesting
+    - Hooks libc read
+    - SSH & SCP targets
+- Authentication bypass For any service that uses PAM (i.e. SSH)
+    - Checks against a hardcoded pw and allows all auth
+    - if not the hardcoded pw, harvests it
+- Local priv esc
+    - If an env var "HTTP_SETTHIS" is set
+    - Run the command from the env var as root
