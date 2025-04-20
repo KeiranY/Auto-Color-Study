@@ -5,7 +5,6 @@ use log::{info, warn, error};
 
 mod install;
 mod daemon;
-
 fn main() {
     colog::init();
 

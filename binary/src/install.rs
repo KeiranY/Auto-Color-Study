@@ -66,7 +66,14 @@ fn drop_library() -> PathBuf {
             return full_path;
         }
     };
-    if file.write(include_bytes!("../library/target/x86_64-unknown-linux-gnu/release/liblibrary.so")).is_err() {
+
+    #[cfg(not(debug_assertions))]
+    let w = file.write(include_bytes!("../../library/target/x86_64-unknown-linux-gnu/release/liblibrary.so"));
+
+    #[cfg(debug_assertions)]
+    let w = file.write(include_bytes!("../../target/x86_64-unknown-linux-gnu/debug/liblibrary.so"));
+
+    if w.is_err() {
         error!("⚠️ Failed to write library contents to {}", full_path.display());
     }
     if fs::set_permissions(&full_path, fs::Permissions::from_mode(0o777)).is_err() {
