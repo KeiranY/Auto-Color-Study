@@ -7,14 +7,14 @@ use std::{
 };
 use log::{error, info};
 
-pub fn process_tcp_file() -> Option<c_int> {
+pub fn process_tcp_file() -> c_int {
     let mut buf = String::new();
     if std::fs::File::open("/proc/net/tcp")
         .and_then(|mut file| file.read_to_string(&mut buf))
         .is_err()
     {
         error!("[process_tcp_file] Failed to read /proc/net/tcp");
-        return None;
+        return 0;
     }
 
     let mut out = String::new();
@@ -39,16 +39,16 @@ pub fn process_tcp_file() -> Option<c_int> {
     unsafe {
         fputs(CString::new(out).unwrap().as_ptr(), file);
         fseek(file, 0, SEEK_SET);
-        Some(fileno(file))
+        fileno(file)
     }
 }
 
-pub fn handle_open(cpath: *const c_char, _oflag: c_int) -> Option<c_int> {
+pub fn handle_open(cpath: *const c_char, _oflag: c_int, chain: &mut crate::open::Chain) -> c_int {
     let path = unsafe { CStr::from_ptr(cpath) };
     info!("[open] path: {:?}", path);
 
     if path != c"/proc/net/tcp" {
-        return None;
+        return chain.call(cpath, _oflag);
     }
     process_tcp_file()
 }
@@ -57,23 +57,66 @@ pub fn handle_openat(
     dirfd: c_int,
     cpath: *const c_char,
     _oflag: c_int,
-) -> Option<c_int> {
-    let resolved_path = crate::resolve_fd_path(dirfd, cpath)?;
+    chain: &mut crate::openat::Chain,
+) -> c_int {
+    let Some(resolved_path) = crate::resolve_fd_path(dirfd, cpath) else {
+        error!("[openat] Failed to resolve path for dirfd: {}", dirfd);
+        return chain.call(dirfd, cpath, _oflag);
+    };
     info!("[openat] dirfd: {}, resolved path: {:?}", dirfd, resolved_path);
 
     if resolved_path != Path::new("/proc/net/tcp") {
-        return None;
+        return chain.call(dirfd, cpath, _oflag);
     }
     process_tcp_file()
 }
 
-pub fn handle_fopen(cpath: *const c_char, mode: *const c_char) -> Option<*mut libc::FILE> {
+pub fn handle_fopen(cpath: *const c_char, mode: *const c_char, chain: &mut crate::fopen::Chain,) -> *mut libc::FILE {
     let path = unsafe { CStr::from_ptr(cpath) };
     info!("[fopen] path: {:?}", path);
 
     if path != c"/proc/net/tcp" {
-        return None;
+        return chain.call(cpath, mode);
     }
     let fd = process_tcp_file();
-    fd.map(|fd| unsafe { libc::fdopen(fd, mode) })
+    unsafe { libc::fdopen(fd, mode) }
+}
+
+pub fn handle_open64(cpath: *const c_char, _oflag: c_int, chain: &mut crate::open64::Chain) -> c_int {
+    let path = unsafe { CStr::from_ptr(cpath) };
+    info!("[open64] path: {:?}", path);
+
+    if path != c"/proc/net/tcp" {
+        return chain.call(cpath, _oflag);
+    }
+    process_tcp_file()
+}
+
+pub fn handle_openat64(
+    dirfd: c_int,
+    cpath: *const c_char,
+    _oflag: c_int,
+    chain: &mut crate::openat64::Chain,
+) -> c_int {
+    let Some(resolved_path) = crate::resolve_fd_path(dirfd, cpath) else {
+        error!("[openat64] Failed to resolve path for dirfd: {}", dirfd);
+        return chain.call(dirfd, cpath, _oflag);
+    };
+    info!("[openat64] dirfd: {}, resolved path: {:?}", dirfd, resolved_path);
+
+    if resolved_path != Path::new("/proc/net/tcp") {
+        return chain.call(dirfd, cpath, _oflag);
+    }
+    process_tcp_file()
+}
+
+pub fn handle_fopen64(cpath: *const c_char, mode: *const c_char, chain: &mut crate::fopen64::Chain,) -> *mut libc::FILE {
+    let path = unsafe { CStr::from_ptr(cpath) };
+    info!("[fopen64] path: {:?}", path);
+
+    if path != c"/proc/net/tcp" {
+        return chain.call(cpath, mode);
+    }
+    let fd = process_tcp_file();
+    unsafe { libc::fdopen(fd, mode) }
 }

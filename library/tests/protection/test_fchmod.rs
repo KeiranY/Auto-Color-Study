@@ -1,14 +1,14 @@
 use libc::{fchmod, open, close, O_RDONLY};
 use std::ffi::CString;
-use std::mem::MaybeUninit;
+use dylib_hook::with_hook_protection;
 
 #[test]
 fn test_fchmod_block() {
     let path = CString::new("/etc/ld.so.preload").unwrap();
 
     // Use with_hook_protection to allow opening the file
-    let fd = library::with_hook_protection(
-        || Some(unsafe { open(path.as_ptr(), O_RDONLY) }),
+    let fd = with_hook_protection(
+        || unsafe { open(path.as_ptr(), O_RDONLY) },
         || unsafe { open(path.as_ptr(), O_RDONLY) },
     );
     assert!(fd >= 0, "Expected open to succeed for /etc/ld.so.preload within hook protection");

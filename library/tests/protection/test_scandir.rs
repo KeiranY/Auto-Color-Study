@@ -1,4 +1,5 @@
 use libc::dirent;
+use dylib_hook::bypass_hooks;
 use std::ffi::CString;
 
 #[test]
@@ -7,7 +8,7 @@ fn test_scandir_block() {
     let mut namelist: *mut *mut dirent = std::ptr::null_mut();
 
     // Attempt to scan the directory
-    let result = unsafe { library::protect_scandir(path.as_ptr(), &mut namelist, None, None) };
+    let result = unsafe { library::scandir(path.as_ptr(), &mut namelist, None, None) };
     assert!(result >= 0, "Expected scandir to succeed for /etc");
 
     // Ensure ld.so.preload is not visible
@@ -43,7 +44,7 @@ fn test_scandir_allow() {
     let mut namelist: *mut *mut dirent = std::ptr::null_mut();
 
     // Attempt to scan the directory
-    let result = unsafe { library::protect_scandir(path.as_ptr(), &mut namelist, None, None) };
+    let result = unsafe { library::scandir(path.as_ptr(), &mut namelist, None, None) };
     assert!(result >= 0, "Expected scandir to succeed for /etc");
 
     // Check that a valid dirent is returned
@@ -71,14 +72,14 @@ fn test_scandir_filter() {
 
     // Define a filter function to exclude entries containing "w"
     unsafe extern "C" fn filter(entry: *const dirent) -> libc::c_int {
-        let entry_name = unsafe { std::ffi::CStr::from_ptr((*entry).d_name.as_ptr())
+        let entry_name = unsafe { std::ffi::CStr::from_ptr((*entry).d_name.as_ptr()) }
             .to_string_lossy()
-            .to_string() };
+            .to_string();
         (!entry_name.contains('w')) as libc::c_int
     }
 
     // Attempt to scan the directory with the filter
-    let result = unsafe { library::protect_scandir(path.as_ptr(), &mut namelist, Some(filter), None) };
+    let result = unsafe { library::scandir(path.as_ptr(), &mut namelist, Some(filter), None) };
     assert!(result >= 0, "Expected scandir to succeed for /etc");
 
     // Ensure a valid entry is returned and neither "passwd" nor "ld.so.preload" are included
@@ -117,7 +118,7 @@ fn test_scandir64_block() {
     let path = CString::new("/etc").unwrap();
     let mut namelist: *mut *mut libc::dirent64 = std::ptr::null_mut();
 
-    let result = unsafe { library::protect_scandir64(path.as_ptr(), &mut namelist, None, None) };
+    let result = unsafe { library::scandir64(path.as_ptr(), &mut namelist, None, None) };
     assert!(result >= 0, "Expected scandir64 to succeed for /etc");
 
     let mut found = false;
@@ -151,7 +152,7 @@ fn test_scandir64_allow() {
     let mut namelist: *mut *mut libc::dirent64 = std::ptr::null_mut();
 
     // Attempt to scan the directory
-    let result = unsafe { library::protect_scandir64(path.as_ptr(), &mut namelist, None, None) };
+    let result = unsafe { library::scandir64(path.as_ptr(), &mut namelist, None, None) };
     assert!(result >= 0, "Expected scandir64 to succeed for /etc");
 
     // Check that a valid dirent64 is returned
@@ -186,7 +187,7 @@ fn test_scandir64_filter() {
     }
 
     // Attempt to scan the directory with the filter
-    let result = unsafe { library::protect_scandir64(path.as_ptr(), &mut namelist, Some(filter), None) };
+    let result = unsafe { library::scandir64(path.as_ptr(), &mut namelist, Some(filter), None) };
     assert!(result >= 0, "Expected scandir64 to succeed for /etc");
 
     // Ensure a valid entry is returned and neither "passwd" nor "ld.so.preload" are included

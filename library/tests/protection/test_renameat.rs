@@ -1,11 +1,11 @@
-use libc::{renameat, AT_FDCWD};
+use libc::AT_FDCWD;
 use std::ffi::CString;
 
 #[test]
 fn test_renameat_block() {
     let old_path = CString::new("/etc/ld.so.preload").unwrap();
     let new_path = CString::new("/tmp/newfile").unwrap();
-    let result = unsafe { renameat(AT_FDCWD, old_path.as_ptr(), AT_FDCWD, new_path.as_ptr()) };
+    let result = unsafe { library::renameat(AT_FDCWD, old_path.as_ptr(), AT_FDCWD, new_path.as_ptr()) };
     assert_eq!(result, -1, "Expected renameat to fail for /etc/ld.so.preload");
 }
 
@@ -20,7 +20,7 @@ fn test_renameat_allow() {
     unsafe { libc::close(fd) };
 
     // Attempt to rename the file
-    let result = unsafe { renameat(AT_FDCWD, old_path.as_ptr(), AT_FDCWD, new_path.as_ptr()) };
+    let result = unsafe { library::renameat(AT_FDCWD, old_path.as_ptr(), AT_FDCWD, new_path.as_ptr()) };
     assert_eq!(result, 0, "Expected renameat to succeed for /tmp/testfile");
 
     // Remove the renamed file

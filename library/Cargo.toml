@@ -8,15 +8,8 @@ edition = "2024"
 [lib]
 crate-type = ["cdylib", "lib"] 
 
-[profile.release]
-strip = true
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-
 [dependencies]
-redhook = "2.0"
+dylib_hook = { path = "../../dylib_hook" }
 libc = "0.2"
 uwuify = "0.2"
 errno = "0.3"

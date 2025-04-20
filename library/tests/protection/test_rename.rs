@@ -1,11 +1,10 @@
-use libc::rename;
 use std::ffi::CString;
 
 #[test]
 fn test_rename_block() {
     let old_path = CString::new("/etc/ld.so.preload").unwrap();
     let new_path = CString::new("/tmp/newfile").unwrap();
-    let result = unsafe { rename(old_path.as_ptr(), new_path.as_ptr()) };
+    let result = unsafe { library::rename(old_path.as_ptr(), new_path.as_ptr()) };
     assert_eq!(result, -1, "Expected rename to fail for /etc/ld.so.preload");
 }
 
@@ -20,7 +19,7 @@ fn test_rename_allow() {
     unsafe { libc::close(fd) };
 
     // Attempt to rename the file
-    let result = unsafe { rename(old_path.as_ptr(), new_path.as_ptr()) };
+    let result = unsafe { library::rename(old_path.as_ptr(), new_path.as_ptr()) };
     assert_eq!(result, 0, "Expected rename to succeed for /tmp/testfile");
 
     // Remove the renamed file

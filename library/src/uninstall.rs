@@ -3,16 +3,16 @@ use std::ffi::CStr;
 use std::fs;
 use std::os::raw::c_void;
 use libc::{Dl_info, dladdr};
-use crate::with_hook_protection;
+use dylib_hook::bypass_hooks;
 use regex::Regex;
 
 pub fn uninstall() {
-    with_hook_protection(|| {
+    bypass_hooks(|| {
         remove_copied_executable();
         remove_preload_hook();
         remove_library_file();
-        Some(())
-    }, ||{});
+        ()
+    });
 }
 
 fn remove_copied_executable() {

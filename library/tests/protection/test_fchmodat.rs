@@ -9,6 +9,7 @@ fn test_fchmodat_block() {
     assert_eq!(result, -1, "Expected fchmodat to fail for /etc/ld.so.preload");
 }
 
+
 #[test]
 fn test_fchmodat_allow() {
     let path = CString::new("/tmp/testfile").unwrap();
